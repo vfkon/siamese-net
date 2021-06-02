@@ -8,9 +8,9 @@ import math
 wav_files=[]
 file =[]
 written=0
-for r, d, f in os.walk('C:\\Users\\vitfv\\научка\\dataset1'):
+for r, d, f in os.walk('dataset1/'):
     for i in f:
-        wav_files.append(os.path.join(r,i))
+        wav_files.append(i)
         file.append(i)
     for i in file:
         samprate,data = wavfile.read(os.path.join(r,i))
@@ -19,20 +19,16 @@ for r, d, f in os.walk('C:\\Users\\vitfv\\научка\\dataset1'):
             data = np.ravel(data)
             data=data[:data_size]
         written=written+1
-        wavfile.write('C:\\Users\\vitfv\\научка\\my_set\\'+i,samprate,data)
+        wavfile.write(i,samprate,data)
+
             
-from scipy import signal
-from scipy.io import wavfile
-import matplotlib.pyplot as plt
-import os
-import numpy as np
 wav_files=[]
 freq_and_pow = {}
-for r, d, f in os.walk('C:\\Users\\vitfv\\научка\\my_set'):
+for r, d, f in os.walk('my_set/'):
     for i in f:
-        wav_files.append(os.path.join(r,i))
+        wav_files.append(i)
 for i in wav_files:
-    samprate,data = wavfile.read(i)
+    samprate,data = wavfile.read(os.path.join(r,i))
     freq,Pow = signal.welch(data,samprate)
     freq_and_pow[i]={}
     freq_and_pow[i]['Sample rate']=samprate
@@ -40,7 +36,7 @@ for i in wav_files:
     freq_and_pow[i]['Power_size']=np.size(Pow)
     freq_and_pow[i]['Data_size']=np.shape(data)
     
-output = open('C:\\Users\\vitfv\\научка\\dataset2.csv', 'w')
+output = open('dataset2.csv', 'w')
 output.write("Название файла,")
 output.write('Частота дискретизации,')
 output.write('Формат по частоте,')
@@ -55,9 +51,9 @@ output.close()
 wav_files=[]
 power = []
 freqs = []
-for r, d, f in os.walk('C:\\Users\\vitfv\\научка\\my_set'):
+for r, d, f in os.walk('my_set/'):
     for i in f:
-        wav_files.append(os.path.join(r,i))
+        wav_files.append(os.path.join(i))
     for i in wav_files:
         samprate,data = wavfile.read(os.path.join(r,i))
         freq,Pow = signal.welch(data,samprate)
@@ -84,7 +80,7 @@ for i in range(67):
         IS_divergence.append(IS_val)
         IS_val =0
     
-output = open('C:\\Users\\vitfv\\научка\\results_KL.csv', 'w')
+output = open('results_KL.csv', 'w')
 output.write(",")
 for i in file:
     output.write(i+',')
@@ -97,7 +93,7 @@ for i in range(67):
 
 output.close()
     
-output = open('C:\\Users\\vitfv\\научка\\results_IS.csv', 'w')
+output = open('results_IS.csv', 'w')
 output.write(",")
 for i in file:
     output.write(i+',')
