@@ -4,7 +4,51 @@ from scipy.io import wavfile
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-import math
+
+def write_to_csv(file_names,output_file,data_array):
+    output = open(output_file, 'w')
+    output.write(",")
+    for i in file:
+        output.write(i+',')
+    for i in range(67):
+        output.write('\n'+file_names[i])
+    for j in range(67):
+        output.write(','+str(data_array[i,j]))
+    output.close()
+
+def prepare_and_print(data_array,labels_array):
+    data_array  = (data_array-np.min(data_array))/(np.max(data_array)-np.min(data_array))#normalize data
+    data_array_t = np.transpose(data_array)                                         #transpose to get a second array in a pair KL(x,y)
+    data_array =np.triu(data_array)                                                 #remove duplicate pairs
+    data_array_t =np.triu(data_array_t)                                   
+    data_array_label1 = conditions_label* data_array                       
+    data_array_label2 = data_array-data_array_label1
+    data_array_t_label1 = conditions_label* data_array_t
+    data_array_t_label2 = data_array_t-data_array_t_label1                          #get arrays of pairs for each label
+    
+    plt.figure()
+    plt.scatter(data_array_label1, data_array_t_label1,s=0.5)
+    plt.scatter(data_array_label2, data_array_t_label2,s=0.5)
+    plt.show()
+    
+def make_class_labels(file_names):
+    class_labels = []
+    for i in file_names:
+        label_tmp=0
+        if 'iphone' in i:
+            label_tmp+=2
+        if 'kitchen' in i:
+            label_tmp+=1  #iphone-kitchen=3 iphone-room=2 android kitchen = 1 android room = 0
+        class_labels.append(label_tmp)
+    return np.array(class_labels) 
+
+def separate_by_conditions(class_labels):
+    conditions_label = np.zeros([class_labels.shape[0],class_labels.shape[0]])
+    for i in range(class_labels.shape[0]):
+        if class_labels[i]==class_labels[j]:
+            conditions_label[i,j]=1  
+    return conditions_label
+
 wav_files=[]
 file =[]
 written=0
@@ -19,7 +63,7 @@ for r, d, f in os.walk('dataset1/'):
             data = np.ravel(data)
             data=data[:data_size]
         written=written+1
-        wavfile.write(i,samprate,data)
+        wavfile.write(os.path.join(r,i),samprate,data)
 
             
 wav_files=[]
@@ -62,60 +106,29 @@ for r, d, f in os.walk('my_set/'):
         freqs.append(freq)
         
 power=np.array(power)
-KL_divergence = []
+
+KL_np = np.zeros([67,67])
 KL_val = 0
 for i in range(67):
     for j in range(67):
-        for k in range(len(freq)):
-            KL_val+=power[i,k]*math.log2(power[i,k]/power[j,k])
-        KL_divergence.append(KL_val)
+        KL_val=np.sum(power[i]*np.log2(power[i]/power[j]))
+        KL_np[i,j]=KL_val      
         KL_val = 0
 
-IS_divergence = []
+
+IS_np = np.zeros([67,67])
 IS_val = 0
 for i in range(67):
     for j in range(67):
-        for k in range(len(freq)):
-            IS_val+=power[i,k]/power[j,k]-math.log2(power[i,k]/power[j,k])-1
-        IS_divergence.append(IS_val)
+        IS_val=np.sum(power[i]/power[j]+np.log2(power[i]/power[j])-1) #правильно?
+        IS_np[i,j] = IS_val
         IS_val =0
     
-output = open('results_KL.csv', 'w')
-output.write(",")
-for i in file:
-    output.write(i+',')
-for i in range(67):
-    output.write('\n'+file[i])
-    for j in range(67):
-        output.write(','+str(KL_divergence[i*67+j]))
-        
-
-
-output.close()
+class_label = make_class_labels(file)    
+conditions_label = separate_by_conditions(class_label)
     
-output = open('results_IS.csv', 'w')
-output.write(",")
-for i in file:
-    output.write(i+',')
-for i in range(67):
-    output.write('\n'+file[i])
-    for j in range(67):
-        output.write(','+str(IS_divergence[i*67+j]))
-        
+write_to_csv(file, 'results_KL.csv', KL_np)
+write_to_csv(file, 'results_IS.csv', IS_np)
 
-
-output.close()
-
-KL_np = np.array(KL_divergence)
-KL_np=np.reshape(KL_np,[67,67])
-KL_np_t = np.transpose(KL_np)
-plt.figure()
-plt.scatter(KL_np, KL_np_t,s=0.5)
-plt.show()
-
-IS_np = np.array(IS_divergence)
-IS_np=np.reshape(IS_np,[67,67])
-IS_np_t = np.transpose(IS_np)
-plt.figure()
-plt.scatter(IS_np, IS_np_t,s=0.5)
-plt.show()
+prepare_and_print(KL_np,conditions_label)
+prepare_and_print(IS_np,conditions_label)
