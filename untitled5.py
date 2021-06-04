@@ -1,6 +1,10 @@
 
 from scipy import signal
 from scipy.io import wavfile
+import sklearn.neural_network as nn
+import sklearn.model_selection as ms
+import sklearn.preprocessing as pp
+import sklearn.metrics as mt
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -45,9 +49,17 @@ def make_class_labels(file_names):
 def separate_by_conditions(class_labels):
     conditions_label = np.zeros([class_labels.shape[0],class_labels.shape[0]])
     for i in range(class_labels.shape[0]):
-        if class_labels[i]==class_labels[j]:
-            conditions_label[i,j]=1  
+        for j in range(class_labels.shape[0]):
+            if class_labels[i]==class_labels[j]:
+                conditions_label[i,j]=1  
     return conditions_label
+
+def get_metrics(y_true, y_pred):
+    acc = mt.accuracy_score(y_true, y_pred)
+    f1 = mt.f1_score(y_true, y_pred)
+    rcall = mt.recall_score(y_true, y_pred)
+    precision = mt.precision_score(y_true, y_pred)
+    return acc,f1,rcall,precision
 
 wav_files=[]
 file =[]
@@ -132,3 +144,21 @@ write_to_csv(file, 'results_IS.csv', IS_np)
 
 prepare_and_print(KL_np,conditions_label)
 prepare_and_print(IS_np,conditions_label)
+
+KL_np_train,KL_np_test,IS_np_train,IS_np_test,label_train,label_test = ms.train_test_split(np.ravel(KL_np),np.ravel(IS_np),np.ravel(conditions_label))
+features_train = np.vstack((KL_np_train,IS_np_train))
+features_train = np.transpose(features_train)
+features_test = np.vstack((KL_np_test,IS_np_test))
+features_test = np.transpose(features_test)
+label_train = label_train.reshape(-1,1)
+label_test = label_test.reshape(-1,1)
+
+pp.normalize(features_train)
+pp.normalize(features_test)
+
+MLP =  nn.MLPClassifier().fit(features_train,label_train)
+print(MLP.get_params())
+print(MLP.score(features_test,label_test))
+metrics = get_metrics(label_test, MLP.predict(features_test))
+class_report = mt.classification_report(label_test, MLP.predict(features_test))
+print(class_report)
